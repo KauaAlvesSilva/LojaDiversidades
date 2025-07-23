@@ -1,0 +1,122 @@
+﻿@model List<LojaDiversidades.Domain.Entities.Produto>
+@{
+    ViewData["Title"] = "Comprar Produtos";
+}
+<script>
+    let carrinho = [];
+
+    function adicionar(id, nome, preco) {
+        const input = document.getElementById("qtd_" + id);
+        const quantidade = parseInt(input.value);
+
+        if (quantidade <= 0 || isNaN(quantidade)) return;
+
+        const itemExistente = carrinho.find(item => item.produtoId === id);
+
+        if (itemExistente) {
+            itemExistente.quantidade += quantidade;
+        } else {
+            carrinho.push({
+                produtoId: id,
+                quantidade: quantidade,
+                precoUnitario: preco
+            });
+        }
+
+        alert(`Adicionado ${quantidade}x ${nome} ao carrinho.`);
+        input.value = 0;
+    }
+
+
+    async function finalizarCompra() {
+        if (carrinho.length === 0) {
+            alert("Seu carrinho está vazio.");
+            return;
+        }
+
+        const response = await fetch('/Venda/Finalizar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(carrinho)
+        });
+
+        if (response.ok) {
+            window.location.href = "/Venda/Confirmacao";
+        } else {
+            const errorText = await response.text();
+            alert("Erro ao finalizar a compra: " + errorText);
+        }
+    }
+
+</script>
+
+<style>
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        background-color: #f4f6f8;
+        padding: 30px;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    table {
+        width: 100%;
+        background: white;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    th, td {
+        padding: 12px;
+        border-bottom: 1px solid #ccc;
+        text-align: center;
+    }
+
+    input, button {
+        padding: 6px;
+        margin: 3px;
+    }
+
+    .btn-finish {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        float: right;
+    }
+</style>
+
+<h2>Comprar Produtos</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Categoria</th>
+            <th>Preço</th>
+            <th>Estoque</th>
+            <th>Qtd</th>
+            <th>Ação</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model)
+        {
+            <tr>
+                <td>@p.Nome</td>
+                <td>@p.Categoria</td>
+                <td>@p.Preco.ToString("C")</td>
+                <td>@p.QuantidadeEmEstoque</td>
+                <td><input id="qtd_@p.Id" type="number" min="1" value="0" /></td>
+                <td><button onclick="adicionar(@p.Id, '@p.Nome', @p.Preco)">Adicionar</button></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button class="btn-finish" onclick="finalizarCompra()">Finalizar Compra</button>
